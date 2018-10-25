@@ -14,14 +14,13 @@ def leastsqr(x, y):
 
 def make_plots(x_array, y_array, labels, err_y=0, title='', x_label='',
                style='different', y_label='', grid=False, method='polynomial',
-               degree=1):
+               degree=3):
     import numpy as np
     from matplotlib import pyplot as plt
     from scipy.interpolate import CubicSpline
     from sklearn.pipeline import make_pipeline
     from sklearn.preprocessing import PolynomialFeatures
     from sklearn.linear_model import Ridge
-    from sklearn.linear_model import TheilSenRegressor
     from matplotlib import cm
     fig, ax = plt.subplots(figsize=(12, 8))
     if style == 'blue':
@@ -30,15 +29,22 @@ def make_plots(x_array, y_array, labels, err_y=0, title='', x_label='',
     if style == 'different':
         colors_points = cm.tab10(np.linspace(0, 0.49, len(x_array)))
         colors_plots = cm.tab10(np.linspace(0.5, 1, len(x_array)))
-    for x, y, c_point, l, c_plot in zip(x_array, y_array, colors_points,
-                                        labels, colors_plots):
+    if style == 'pink':
+        colors_points = cm.winter(np.linspace(0.5, 1, len(x_array)))
+        colors_plots = cm.cool(np.linspace(0.5, 1, len(x_array)))
+    if not err_y:
+        err_y = [0 for i in X]
+    if not err_y:
+        err_y = [0 for i in x_array]
+    for x, y, c_point, l, c_plot, e_y in zip(x_array, y_array, colors_points,
+                                        labels, colors_plots, err_y):
         x_plot = np.linspace(min(x), max(x), 200)
-        ax.errorbar(x, y, fmt='o', yerr=err_y, label=l, color=c_point)
+        ax.errorbar(x, y, fmt='o', yerr=e_y, label=l, color=c_point)
         plt.legend()
         if method == 'cubic':
             smth = CubicSpline(x, y)
             y_plot = smth(x_plot)
-        elif method == 'polynomial_r':
+        elif method == 'polynomial':
             x_pol = x[:, np.newaxis]
             degree = int(degree)
             import warnings
@@ -46,15 +52,6 @@ def make_plots(x_array, y_array, labels, err_y=0, title='', x_label='',
                                     message="^internal gelsd")
             smth = make_pipeline(PolynomialFeatures(degree),
                                  Ridge(alpha=1*10**-16))
-            smth.fit(x_pol, y)
-            y_plot = smth.predict(x_plot[:, np.newaxis])
-        elif method == 'polynomial_t':
-            x_pol = x[:, np.newaxis]
-            import warnings
-            warnings.filterwarnings(action="ignore", module="scipy",
-                                    message="^internal gelsd")
-            smth = make_pipeline(PolynomialFeatures(degree),
-                                 TheilSenRegressor())
             smth.fit(x_pol, y)
             y_plot = smth.predict(x_plot[:, np.newaxis])
         plt.plot(x_plot, y_plot, color=c_plot)
